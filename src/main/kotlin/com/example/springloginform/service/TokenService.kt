@@ -17,16 +17,17 @@ import java.util.Date
 class TokenService(
     jwtProperties: JwtProperties
 ) {
-    //바이트 배열로부터 HMAC SHA 알고리즘을 사용하여 시크릿 키를 생성함.
-    private val secretKey= Keys.hmacShaKeyFor(
+    private val secretKey = Keys.hmacShaKeyFor(
         jwtProperties.key.toByteArray()
     )
+
+
 
     fun generate(
         userDetails: UserDetails,
         expirationDate: Date,
-        additionalClaims: Map<String,Any> = emptyMap()
-    ) : String =
+        additionalClaims: Map<String, Any> = emptyMap()
+    ): String =
         Jwts.builder()
             .claims()
             .subject(userDetails.username)
@@ -36,23 +37,24 @@ class TokenService(
             .and()
             .signWith(secretKey)
             .compact()
-
-    fun extractEmail(token: String) : String? = getAllClaims(token).subject
-
-    fun isExpired(token: String) : Boolean = getAllClaims(token).expiration.before(Date(System.currentTimeMillis()))
-
-    fun isValid(token: String,userDetails: UserDetails) : Boolean{
+    fun isValid(token: String, userDetails: UserDetails): Boolean {
         val email = extractEmail(token)
-
         return userDetails.username == email && !isExpired(token)
     }
-
-    private fun getAllClaims(token : String) : Claims{
-        var parser = Jwts.parser()
+    fun extractEmail(token: String): String? =
+        getAllClaims(token)
+            .subject
+    fun isExpired(token: String): Boolean =
+        getAllClaims(token)
+            .expiration
+            .before(Date(System.currentTimeMillis()))
+    private fun getAllClaims(token: String): Claims {
+        val parser = Jwts.parser()
             .verifyWith(secretKey)
             .build()
-
-        return parser.parseEncryptedClaims(token).payload
+        return parser
+            .parseSignedClaims(token)
+            .payload
     }
 
 
